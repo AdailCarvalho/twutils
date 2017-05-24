@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>br.com.twutils</groupId>
   <artifactId>twutils</artifactId>
-  <version>0.1.0</version>
+  <version>1.0.0</version>
   <name>Archetype - twutils</name>
   <url>http://maven.apache.org</url>
   
@@ -46,13 +46,14 @@
 		<twitter4j-core.version>4.0.4</twitter4j-core.version>
 
 		<!-- Parsers -->
-		<univocity.version>1.5.6</univocity.version>
+		<univocity.version>2.4.1</univocity.version>
 		<json-simple.version>1.1.1</json-simple.version>
 
 		<!-- Commons -->
 		<commons-cli.version>1.2</commons-cli.version>
 		<commons.io.version>2.1</commons.io.version>
-		
+		<commons-lang3.version>3.0</commons-lang3.version>
+			
 		<!-- Logging -->
 		<log4j.version>1.2.17</log4j.version>
 
@@ -105,6 +106,13 @@
     		<artifactId>commons-io</artifactId>
     		<version>${commons.io.version}</version>
 		</dependency>
+		
+		<dependency>
+    		<groupId>org.apache.commons</groupId>
+    		<artifactId>commons-lang3</artifactId>
+    		<version>${commons-lang3.version}</version>
+		</dependency>
+			
 		
   </dependencies>
 </project>

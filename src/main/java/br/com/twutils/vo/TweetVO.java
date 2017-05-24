@@ -2,6 +2,8 @@ package br.com.twutils.vo;
 
 import java.util.Date;
 
+import com.univocity.parsers.annotations.Parsed;
+
 /**
  * 
  * @author Adail Carvalho
@@ -10,22 +12,31 @@ import java.util.Date;
  */
 public class TweetVO {
 
+	@Parsed
 	private Long tweetId;
 	
+	@Parsed
 	private Long userId;
 
+	@Parsed
 	private String tweetText;
 
+	@Parsed
 	private String userScreenName;
 
+	@Parsed
 	private int retweetCount;
 
+	@Parsed
 	private int favouriteCount;
 
+	@Parsed
 	private Date createdAt;
 
+	@Parsed
 	private Double latitude;
 
+	@Parsed
 	private Double longitude;
 
 	public Date getCreatedAt() {

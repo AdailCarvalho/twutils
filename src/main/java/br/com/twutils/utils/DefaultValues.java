@@ -3,26 +3,39 @@ package br.com.twutils.utils;
 /**
  * 
  * @author Adail Carvalho
- * @since 1.0.1
- *
+ * 
+ * @version 0.1.0
+ * 
+ * @since 27-08-2016
  */
 public class DefaultValues {
 	
-	public static final int DEFAULT_COUNT = 100;
+	/**
+	* The number of times the application will request TwitterSearchAPI for tweet data.
+    */
+	public static final int DEFAULT_COUNT = 1000;
 	
 	public static final String DEFAULT_CSV_SEPARATOR = ";";
 
-	public static final int DEFAULT_THREAD_WAIT_TIME = 15;
+	public static final String QUOTES_ESCAPE = "\\";
 	
-	public int getDefaultCount() {
-		return DEFAULT_COUNT;
-	}
+	public static final String EMPTY_STRING = "";
 	
-	public String getDefaultCsvSeparator() {
-		return DEFAULT_CSV_SEPARATOR;
-	}
+	public static final String BREAKLINE = "\n";
 	
-	public int getDefaultThreadWaitTime() {
-		return DEFAULT_THREAD_WAIT_TIME;
-	}
+	public static final String WINDOWS_SLASH = "\\";
+	
+	public static final String UNIX_SLASH = "/";
+		
+	/**
+	* The interval (in seconds) between each request.
+	*/
+	public static final int DEFAULT_THREAD_WAIT_TIME = 15000;
+	
+	/**
+	 * The fields extracted from tweet raw data.
+	 */
+	public static final String[] DEFAULT_TWEET_HEADER = {"id", "tweet", "username", "latitude", "longitude", "created-at", 
+			"retweetsCount", "favouriteCount"};
+
 }

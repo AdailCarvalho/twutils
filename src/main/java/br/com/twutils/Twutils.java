@@ -10,9 +10,18 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.log4j.Logger;
 
+import br.com.twutils.config.SysConfig;
 import br.com.twutils.runner.TwutilsRunner;
 import twitter4j.TwitterException;
 
+/**
+ * 
+ * @author Adail Carvalho
+ * 
+ * @version 0.1.0
+ * 
+ * @since 27-08-2016
+ */
 public class Twutils {
 	
 	private static final Logger logger = Logger.getLogger(Twutils.class);
@@ -23,9 +32,12 @@ public class Twutils {
 	
 	private CommandLineParser cmdParser;
 	
+	SysConfig sysConfig;
+	
 	public Twutils(String[] cmdArgs) throws TwitterException {
 		options = new Options();
 		cmdParser = new BasicParser();
+		sysConfig = new SysConfig();
 		buildOptions(cmdArgs);
 	}
 	
@@ -40,7 +52,7 @@ public class Twutils {
 		
 		Option outputOpt = OptionBuilder.withArgName("out")
 				.withLongOpt(TwutilsOptions.OUTPUT_PATH)
-				.withDescription("Output dir of tweets. ")
+				.withDescription("Output tweets data filename. ")
 				.hasArg(true)
 				.isRequired(true)
 				.create();
@@ -73,14 +85,14 @@ public class Twutils {
 		if (cmdLine.hasOption(TwutilsOptions.TWEETS_FROM_STREAM)) {
 			String[] keywords =  cmdLine.getOptionValues(TwutilsOptions.TWEETS_FROM_STREAM);
 			String[] outputDir = cmdLine.getOptionValues(TwutilsOptions.OUTPUT_PATH);
-			String output = outputDir[0];
+			
+			String output = sysConfig.getTwutilsPath().concat(outputDir[0]);
 			
 			runner.searchTweetsFromStream(output, keywords);
 		}
 			 
 		if (cmdLine.hasOption(TwutilsOptions.HELP)) {
-			
-			   
+			 help();
 		} else {
 			logger.info("The entered option does not exists. ");
 			help();

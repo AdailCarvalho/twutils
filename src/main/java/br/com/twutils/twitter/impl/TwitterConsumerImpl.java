@@ -1,16 +1,19 @@
 package br.com.twutils.twitter.impl;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
-import org.apache.log4j.Priority;
-import org.json.simple.JSONObject;
 
+import com.univocity.parsers.csv.CsvWriter;
+
+import br.com.twutils.csv.CsvManager;
+import br.com.twutils.csv.impl.CsvManagerImpl;
+import br.com.twutils.twitter.TwitterConsumer;
+import br.com.twutils.utils.DefaultValues;
+import br.com.twutils.utils.PropertiesHandler;
+import br.com.twutils.vo.TweetVO;
 import twitter4j.GeoLocation;
 import twitter4j.Query;
 import twitter4j.Query.Unit;
@@ -21,34 +24,32 @@ import twitter4j.TwitterException;
 import twitter4j.TwitterFactory;
 import twitter4j.auth.AccessToken;
 
-import br.com.twutils.twitter.TwitterConsumer;
-import br.com.twutils.utils.DefaultValues;
-import br.com.twutils.utils.PropertiesHandler;
-import br.com.twutils.vo.TweetVO;
-
 /**
  * 
  * @author Adail Carvalho
- * @since 1.0.1
+ * 
+ * @version 0.1.0
+ * 
+ * @since 27-08-2016
  */
 public class TwitterConsumerImpl implements TwitterConsumer {
 	
-	private static final Logger logger = Logger.getLogger(TwitterConsumerImpl.class);
+	private static final Logger LOG = Logger.getLogger(TwitterConsumerImpl.class);
 	
 	private static Twitter twitter;
 	private String accessToken;
 	private String accessSecret;
 	private String consumerKey;
 	private String consumerSecret;
+		
+	private String outputFilePath;
 	
-	private String output;
-	
-	private File outputFile;
-	
+	CsvManager csvManager;
 	PropertiesHandler properties;
 	
 	public TwitterConsumerImpl() {
 		properties = new PropertiesHandler();
+		csvManager = new CsvManagerImpl();
 		loadTokens();
 		twitter = authApplicationAccess();
 	}
@@ -62,19 +63,22 @@ public class TwitterConsumerImpl implements TwitterConsumer {
 		authApplicationAccess();
 	}
 	
-	@SuppressWarnings("deprecation")
 	public Twitter authApplicationAccess() {
 		Twitter twitter = null;
+		LOG.info("Authorizing application to consume API...");
 		try {
 			AccessToken accessTk;
 			twitter = TwitterFactory.getSingleton();
 			accessTk = new AccessToken(accessToken, accessSecret);
 			twitter.setOAuthConsumer(consumerKey, consumerSecret);
 			twitter.setOAuthAccessToken(accessTk);
+			
 		} catch (Exception e1) {
-			logger.info("Unable to authenticate application. ");
+			LOG.info("Unable to authenticate application. ");
 			throw new RuntimeException(e1.getMessage());
 		}
+		
+		LOG.info("Authorized. ");
 		return twitter;
 	}
 	
@@ -99,6 +103,7 @@ public class TwitterConsumerImpl implements TwitterConsumer {
 		}
 
 		Query query = new Query(rawQuery.toString());
+		query.setCount(DefaultValues.DEFAULT_COUNT);
 		GeoLocation location = new GeoLocation(latitude, longitude);
 
 		if (unit != "mi") {
@@ -107,67 +112,76 @@ public class TwitterConsumerImpl implements TwitterConsumer {
 			query.setGeoCode(location, radius, Unit.mi);
 		}
 
-		query.setCount(DefaultValues.DEFAULT_COUNT);
 		return searchTweetsFromStream(query, 1L, tweetsListVO);
 	}
 	
-	@SuppressWarnings("unchecked")
-	public List<TweetVO> searchTweetsFromStream(Query query, Long sinceId, List<TweetVO> tweetsListVO) {
+	public List<TweetVO> searchTweetsFromStream(Query query, Long sinceId, List<TweetVO> tweetsListVO) throws TwitterException {
 		QueryResult result;
 		List<TweetVO> listWithTweets = tweetsListVO;
-		query.setCount(DefaultValues.DEFAULT_COUNT);
-		query.setSinceId(sinceId);
-
-		try {
-			result = twitter.search(query);
-			sinceId = result.getMaxId();
-
-			for (Status status : result.getTweets()) {
-				TweetVO twitterVO = new TweetVO();
-				Double lat = status.getGeoLocation() == null ? 0.0 : status.getGeoLocation().getLatitude();
-				Double lon = status.getGeoLocation() == null ? 0.0 : status.getGeoLocation().getLongitude();
-				twitterVO.setTweetId(status.getId());
-				twitterVO.setTweetText(status.getText());
-				twitterVO.setUserScreenName(status.getUser().getName());
-				twitterVO.setRetweetCount(status.getRetweetCount());
-				twitterVO.setFavouriteCount(status.getFavoriteCount());
-				twitterVO.setLatitude(lat);
-				twitterVO.setLongitude(lon);
-				twitterVO.setCreatedAt(status.getCreatedAt());
+		
+		CsvWriter tweetsWriter = csvManager.getCsvWriter(this.outputFilePath);
+		
+		Long sinId = sinceId;
+		Query qry = query;
+		qry.setCount(DefaultValues.DEFAULT_COUNT);
+		qry.setSinceId(sinId);
+		
+		int requestNumber = 1;
+		int tweetsCount = 0;
+		
+		
+		while (requestNumber <= DefaultValues.DEFAULT_COUNT) {
+			try {
+				result = twitter.search(qry);
+				sinId = result.getMaxId(); 
 				
-				//WriteToFile Test
-				JSONObject tweet = new JSONObject();
-				tweet.put("id", status.getId());
-				tweet.put("text", status.getText());
-				tweet.put("username", status.getUser().getScreenName());
-				tweet.put("latitude", lat);
-				tweet.put("longitude", lon);
-				tweet.put("created-at", status.getCreatedAt());
-				tweet.put("retweetsNum", status.getRetweetCount());
-				tweet.put("favourite", status.getFavoriteCount());
-				FileUtils.writeStringToFile(outputFile, tweet.toJSONString() + "\n" , true);
+				for (Status status : result.getTweets()) {
+					TweetVO twitterVO = new TweetVO();
+					Double lat = status.getGeoLocation() == null ? 0.0 : status.getGeoLocation().getLatitude();
+					Double lon = status.getGeoLocation() == null ? 0.0 : status.getGeoLocation().getLongitude();
+					twitterVO.setTweetId(status.getId());
+					twitterVO.setTweetText(status.getText().replaceAll(DefaultValues.BREAKLINE, DefaultValues.EMPTY_STRING));
+					twitterVO.setUserScreenName(status.getUser().getName());
+					twitterVO.setRetweetCount(status.getRetweetCount());
+					twitterVO.setFavouriteCount(status.getFavoriteCount());
+					twitterVO.setLatitude(lat);
+					twitterVO.setLongitude(lon);
+					twitterVO.setCreatedAt(status.getCreatedAt());
+					
+					tweetsWriter.writeRow(twitterVO.getTweetId(), twitterVO.getTweetText(), twitterVO.getUserScreenName(), 
+							twitterVO.getLatitude(), twitterVO.getLongitude(), twitterVO.getCreatedAt(), twitterVO.getRetweetCount(), twitterVO.getFavouriteCount());
+					listWithTweets.add(twitterVO);
+				}
 				
-				listWithTweets.add(twitterVO);
+				tweetsCount += result.getTweets().size();
+				
+				LOG.info("Twitter requests count: " + requestNumber);
+				LOG.info("Tweets retrieved: " + tweetsCount);
+				tweetsWriter.flush();
+				
+				Thread.sleep(DefaultValues.DEFAULT_THREAD_WAIT_TIME);
+				qry.setSinceId(sinId);
+				result = null;
+			} catch (TwitterException e1) {
+				LOG.info("Could not get tweets from stream.");
+				throw new RuntimeException(e1);
+			} catch (InterruptedException e2) {
+				throw new RuntimeException(e2);
 			}
-			Thread.sleep(DefaultValues.DEFAULT_THREAD_WAIT_TIME);
-			searchTweetsFromStream(query, sinceId, tweetsListVO);
-		} catch (TwitterException e1) {
-			logger.info("Could not get tweets from stream.");
-			throw new RuntimeException(e1);
-		} catch (InterruptedException e2) {
-			throw new RuntimeException(e2);
-		} catch (IOException e3) {
-			logger.info("Path to output file not found. ");
-			throw new RuntimeException(e3);
+			
+			requestNumber += 1;
 		}
+		
+		tweetsWriter.close();
 		return listWithTweets;
 	}
 	
-	public List<TweetVO> searchTweetsFromStream(String output, String... keywords) throws TwitterException {
+	public List<TweetVO> searchTweetsFromStream(String outputFilePath, String... keywords) throws TwitterException {
 		StringBuilder rawQuery = new StringBuilder();
 		List<TweetVO> tweetsListVO = new ArrayList<TweetVO>();
 		
-		this.setOutputFile(output);
+		this.setOutputFilePath(outputFilePath);
+		
 		for (int i = 0; i < keywords.length; i++) {
 			rawQuery.append("(" + keywords[i] + ")");
 			if (i < keywords.length - 1) {
@@ -175,10 +189,12 @@ public class TwitterConsumerImpl implements TwitterConsumer {
 			}
 		}
 		Query query = new Query(rawQuery.toString());
+		
+		LOG.info("Retrieve tweets contaiting the following words: " + rawQuery.toString());
 		return searchTweetsFromStream(query, 1L, tweetsListVO);
 	}
 	
-	public void setOutputFile(String output) {
-		this.outputFile = new File(output + "\\tweets_data.json");
+	public void setOutputFilePath(String outputFilePath) {
+		this.outputFilePath = outputFilePath;
 	}
 }
