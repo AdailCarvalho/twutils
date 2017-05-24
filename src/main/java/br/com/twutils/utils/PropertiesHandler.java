@@ -8,7 +8,10 @@ import java.util.Properties;
 /**
  * 
  * @author Adail Carvalho
- * @since 1.0.1
+ * 
+ * @version 0.1.0
+ * 
+ * @since 27-08-2016
  */
 public class PropertiesHandler {
 	
