@@ -35,11 +35,17 @@ Options available:
 
 ## Running
 
-Pass any number of keywords the tweets you want to search must contain, separated by semicolon. The default output directory will 
-- Windows: C:\opt\twutils\
-- Linux: /opt/twutils/
+Pass any number of keywords the tweets you want to search must contain, separated by semicolon. 
 
-	java -jar --stweets "#Xfactor;#BakeOffBrazil;Estado Islâmico" --output dados_tv.csv	
+	java -jar --stweets "#Xfactor;#BakeOffBrazil;Estado Islâmico" --output dados_tv.csv
+
+The default output directory will be:
+
+- On Windows: C:\opt\twutils\
+
+- On Linux: /opt/twutils/
+
+	
 
 ## Contact
 
