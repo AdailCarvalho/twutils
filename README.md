@@ -19,8 +19,11 @@ Options available:
 
 ## Running
 
-	java -jar --stweets "#Xfactor;#BakeOffBrazil" --output dados_tv.csv	
+Pass any number of keywords the tweets you want to search must contain, separated by semicolon.
+
+	java -jar --stweets "#Xfactor;#BakeOffBrazil;Estado Islâmico" --output dados_tv.csv	
 
 ## Contact
 
 	https://www.linkedin.com/in/adail-carvalho-a34343106
+	adail.dux@gmail.com
