@@ -3,6 +3,7 @@ package br.com.twutils.twitter.impl;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 import org.apache.log4j.Logger;
 
@@ -15,6 +16,7 @@ import br.com.twutils.utils.DefaultValues;
 import br.com.twutils.utils.PropertiesHandler;
 import br.com.twutils.vo.TweetVO;
 import twitter4j.GeoLocation;
+import twitter4j.Place;
 import twitter4j.Query;
 import twitter4j.Query.Unit;
 import twitter4j.QueryResult;
@@ -37,13 +39,21 @@ public class TwitterConsumerImpl implements TwitterConsumer {
 	private static final Logger LOG = Logger.getLogger(TwitterConsumerImpl.class);
 	
 	private static Twitter twitter;
+	
 	private String accessToken;
+	
 	private String accessSecret;
+	
 	private String consumerKey;
+	
 	private String consumerSecret;
 		
 	private String outputFilePath;
 	
+	private String keywords;
+	
+	private Long lastExecutionSinceId;
+		
 	CsvManager csvManager;
 	PropertiesHandler properties;
 	
@@ -74,7 +84,7 @@ public class TwitterConsumerImpl implements TwitterConsumer {
 			twitter.setOAuthAccessToken(accessTk);
 			
 		} catch (Exception e1) {
-			LOG.info("Unable to authenticate application. ");
+			LOG.error("Unable to authenticate application. ");
 			throw new RuntimeException(e1.getMessage());
 		}
 		
@@ -140,16 +150,41 @@ public class TwitterConsumerImpl implements TwitterConsumer {
 					Double lat = status.getGeoLocation() == null ? 0.0 : status.getGeoLocation().getLatitude();
 					Double lon = status.getGeoLocation() == null ? 0.0 : status.getGeoLocation().getLongitude();
 					twitterVO.setTweetId(status.getId());
+					twitterVO.setKeywords(keywords.replace(";", ","));
 					twitterVO.setTweetText(status.getText().replaceAll(DefaultValues.BREAKLINE, DefaultValues.EMPTY_STRING));
-					twitterVO.setUserScreenName(status.getUser().getName());
+					twitterVO.setUserId(status.getUser().getId());
+					twitterVO.setUserName(status.getUser().getName());
+					twitterVO.setUserScreenName(status.getUser().getScreenName());
+					String userLocation = (status.getUser().getLocation() == null ? "N/I" : status.getUser().getLocation());
+					twitterVO.setUserLocation(userLocation);
+					twitterVO.setUserFollowersCount(status.getUser().getFollowersCount());
 					twitterVO.setRetweetCount(status.getRetweetCount());
 					twitterVO.setFavouriteCount(status.getFavoriteCount());
+					Place place = status.getPlace();
+					String countryCode = "N/I";
+					String countryName = "N/I";
+					String placeFullName = "N/I";
+					String streetAddress = "N/I";
+					if (place != null) {
+						countryCode = (status.getPlace().getCountryCode() == null ? "N/I" : status.getPlace().getCountryCode());
+						countryName = (status.getPlace().getCountry() == null ? "N/I" : status.getPlace().getCountry());
+						placeFullName = (status.getPlace().getFullName() == null ? "N/I" : status.getPlace().getFullName());
+						streetAddress = (status.getPlace().getStreetAddress() == null ? "N/I" : status.getPlace().getStreetAddress());
+					}
+					twitterVO.setCountryCode(countryCode);
+					twitterVO.setCountryName(countryName);
+					twitterVO.setPlaceFullName(placeFullName);
+					twitterVO.setStreetAddress(streetAddress);
 					twitterVO.setLatitude(lat);
 					twitterVO.setLongitude(lon);
 					twitterVO.setCreatedAt(status.getCreatedAt());
 					
-					tweetsWriter.writeRow(twitterVO.getTweetId(), twitterVO.getTweetText(), twitterVO.getUserScreenName(), 
-							twitterVO.getLatitude(), twitterVO.getLongitude(), twitterVO.getCreatedAt(), twitterVO.getRetweetCount(), twitterVO.getFavouriteCount());
+					tweetsWriter.writeRow(twitterVO.getTweetId(), twitterVO.getTweetText(), twitterVO.getKeywords(),
+							twitterVO.getUserId(), twitterVO.getUserName(), twitterVO.getUserScreenName(),
+							twitterVO.getUserLocation(), twitterVO.getUserFollowersCount(), twitterVO.getCountryCode(), 
+							twitterVO.getCountryName(), twitterVO.getPlaceFullName(), twitterVO.getStreetAddress(), 
+							twitterVO.getLatitude(), twitterVO.getLongitude(), twitterVO.getCreatedAt(), 
+							twitterVO.getRetweetCount(), twitterVO.getFavouriteCount());
 					listWithTweets.add(twitterVO);
 				}
 				
@@ -163,11 +198,13 @@ public class TwitterConsumerImpl implements TwitterConsumer {
 				qry.setSinceId(sinId);
 				result = null;
 			} catch (TwitterException e1) {
-				LOG.info("Could not get tweets from stream.");
+				LOG.error("Could not get tweets from stream.");
 				throw new RuntimeException(e1);
 			} catch (InterruptedException e2) {
 				throw new RuntimeException(e2);
 			}
+			
+			this.setLastSinceId(sinId);
 			
 			requestNumber += 1;
 		}
@@ -188,13 +225,33 @@ public class TwitterConsumerImpl implements TwitterConsumer {
 				rawQuery.append(" OR ");
 			}
 		}
+		
 		Query query = new Query(rawQuery.toString());
+		this.setKeywords(rawQuery.toString());
 		
 		LOG.info("Retrieve tweets contaiting the following words: " + rawQuery.toString());
-		return searchTweetsFromStream(query, 1L, tweetsListVO);
+		return searchTweetsFromStream(query, getLastSinceId(), tweetsListVO);
+	}
+	
+	/*
+	 * Config the methods bellow in the interface.
+	 */
+	public void setKeywords(String keywords) {
+		this.keywords = keywords;
 	}
 	
 	public void setOutputFilePath(String outputFilePath) {
 		this.outputFilePath = outputFilePath;
+	}
+	
+	public Long getLastSinceId() {
+		String strLastSinceId = properties.getTwitterProperties().get("sinceIdFromLastExec");
+		this.lastExecutionSinceId = Long.valueOf(strLastSinceId);
+		return this.lastExecutionSinceId;
+	} 
+	
+	public void setLastSinceId(Long lastSinceIdFromExec) {
+		Properties prop = properties.getProperties();
+		prop.setProperty("twutils.search.last.sinceid", String.valueOf(lastSinceIdFromExec));
 	}
 }

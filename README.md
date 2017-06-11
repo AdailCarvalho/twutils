@@ -37,7 +37,7 @@ Options available:
 
 Pass any number of keywords the tweets you want to search must contain, separated by semicolon. 
 
-	java -jar --stweets "#Xfactor;#BakeOffBrazil;Estado Islâmico" --output dados_tv.csv
+	java -jar --stweets twutils-1.0.0-jar-with-dependencies.jar "#Xfactor;#BakeOffBrazil;Estado Islâmico" --output dados_tv.csv
 
 The default output directory will be:
 
