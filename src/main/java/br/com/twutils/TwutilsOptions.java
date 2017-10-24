@@ -10,10 +10,14 @@ package br.com.twutils;
  */
 public class TwutilsOptions {
 
-	static String TWEETS_FROM_STREAM = "stweets";
+	public static final String TWEETS_FROM_STREAM = "streamTT";
 	
-	static String HELP = "help";
+	public static final String TWEETS_BY_LOCATION = "geoTT";
 	
-	static String OUTPUT_PATH = "output";
+	public static final String UNIT = "unit";
+	
+	public static final String HELP = "help";
+	
+	public static final String OUTPUT_PATH = "output";
 
 }

@@ -36,7 +36,7 @@ import twitter4j.auth.AccessToken;
  */
 public class TwitterConsumerImpl implements TwitterConsumer {
 	
-	private static final Logger LOG = Logger.getLogger(TwitterConsumerImpl.class);
+	private static final Logger LOGGER = Logger.getLogger(TwitterConsumerImpl.class);
 	
 	private static Twitter twitter;
 	
@@ -75,20 +75,18 @@ public class TwitterConsumerImpl implements TwitterConsumer {
 	
 	public Twitter authApplicationAccess() {
 		Twitter twitter = null;
-		LOG.info("Authorizing application to consume API...");
+		LOGGER.info("Configuring application to consume API...");
 		try {
 			AccessToken accessTk;
 			twitter = TwitterFactory.getSingleton();
 			accessTk = new AccessToken(accessToken, accessSecret);
 			twitter.setOAuthConsumer(consumerKey, consumerSecret);
-			twitter.setOAuthAccessToken(accessTk);
-			
+			twitter.setOAuthAccessToken(accessTk);			
 		} catch (Exception e1) {
-			LOG.error("Unable to authenticate application. ");
+			LOGGER.error("Unable to authenticate application. ");
 			throw new RuntimeException(e1.getMessage());
 		}
 		
-		LOG.info("Authorized. ");
 		return twitter;
 	}
 	
@@ -116,7 +114,7 @@ public class TwitterConsumerImpl implements TwitterConsumer {
 		query.setCount(DefaultValues.DEFAULT_COUNT);
 		GeoLocation location = new GeoLocation(latitude, longitude);
 
-		if (unit != "mi") {
+		if (unit.equalsIgnoreCase(Unit.km.name())) {
 			query.setGeoCode(location, radius, Unit.km);
 		} else {
 			query.setGeoCode(location, radius, Unit.mi);
@@ -190,15 +188,15 @@ public class TwitterConsumerImpl implements TwitterConsumer {
 				
 				tweetsCount += result.getTweets().size();
 				
-				LOG.info("Twitter requests count: " + requestNumber);
-				LOG.info("Tweets retrieved: " + tweetsCount);
+				LOGGER.info("Twitter requests count: " + requestNumber);
+				LOGGER.info("Tweets retrieved: " + tweetsCount);
 				tweetsWriter.flush();
 				
 				Thread.sleep(DefaultValues.DEFAULT_THREAD_WAIT_TIME);
 				qry.setSinceId(sinId);
 				result = null;
 			} catch (TwitterException e1) {
-				LOG.error("Could not get tweets from stream.");
+				LOGGER.error("Could not get tweets from stream.");
 				throw new RuntimeException(e1);
 			} catch (InterruptedException e2) {
 				throw new RuntimeException(e2);
@@ -229,7 +227,7 @@ public class TwitterConsumerImpl implements TwitterConsumer {
 		Query query = new Query(rawQuery.toString());
 		this.setKeywords(rawQuery.toString());
 		
-		LOG.info("Retrieve tweets contaiting the following words: " + rawQuery.toString());
+		LOGGER.info("Retrieve tweets contaiting the following words: " + rawQuery.toString());
 		return searchTweetsFromStream(query, getLastSinceId(), tweetsListVO);
 	}
 	

@@ -1,15 +1,8 @@
 package br.com.twutils;
 
-import org.apache.commons.cli.BasicParser;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.OptionBuilder;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
 import org.apache.log4j.Logger;
 
+import br.com.twutils.cli.Cli;
 import br.com.twutils.config.SysConfig;
 import br.com.twutils.runner.TwutilsRunner;
 import twitter4j.TwitterException;
@@ -24,87 +17,67 @@ import twitter4j.TwitterException;
  */
 public class Twutils {
 	
-	private static final Logger logger = Logger.getLogger(Twutils.class);
+	private static final Logger LOGGER = Logger.getLogger(Twutils.class);
 	
-	private Options options;
-	
-	private CommandLine cmdLine;
-	
-	private CommandLineParser cmdParser;
+	Cli cmdLine;
 	
 	SysConfig sysConfig;
 	
-	public Twutils(String[] cmdArgs) throws TwitterException {
-		options = new Options();
-		cmdParser = new BasicParser();
+	TwutilsRunner runner;
+	
+	public Twutils() throws TwitterException {
 		sysConfig = new SysConfig();
-		buildOptions(cmdArgs);
+		runner = new TwutilsRunner();
+		cmdLine = new Cli();
 	}
 	
-	@SuppressWarnings("static-access")
-	public void buildOptions(String[] cmdArgs) throws TwitterException {
-		Option strTweetsOpt = OptionBuilder.withArgName("tt")
-				.withLongOpt(TwutilsOptions.TWEETS_FROM_STREAM)
-				.withDescription("Collect tweets that contains the given keywords. ")
-				.hasArg(true)
-				.isRequired(true)
-				.create();
+	public int run(String[] cmdArgs) throws TwitterException {
+		cmdLine.buildOptions(cmdArgs);
+		String outputDefault = "";
 		
-		Option outputOpt = OptionBuilder.withArgName("out")
-				.withLongOpt(TwutilsOptions.OUTPUT_PATH)
-				.withDescription("Output tweets data filename. ")
-				.hasArg(true)
-				.isRequired(true)
-				.create();
-		
-		Option helpOpt = OptionBuilder.withArgName("h")
-				.withLongOpt(TwutilsOptions.HELP)
-				.withDescription("Show help. ")
-				.hasArg(false)
-				.create();
-		
-		options.addOption(strTweetsOpt);
-		options.addOption(outputOpt);
-		options.addOption(helpOpt);
-		
-		try {
-			cmdLine = cmdParser.parse(options, cmdArgs);
-			run();
-		} catch (ParseException e1) {
-			throw new RuntimeException(e1);
-		}
-	}
-	
-	public void help() {
-		HelpFormatter formater = new HelpFormatter();
-		formater.printHelp("Twutils", options);
-	}
-	
-	public int run() throws TwitterException {
-		TwutilsRunner runner = new TwutilsRunner();
 		if (cmdLine.hasOption(TwutilsOptions.TWEETS_FROM_STREAM)) {
-			String[] keywords =  cmdLine.getOptionValues(TwutilsOptions.TWEETS_FROM_STREAM);
+			String[] keywords = cmdLine.getOptionValues(TwutilsOptions.TWEETS_FROM_STREAM);
 			String[] outputDir = cmdLine.getOptionValues(TwutilsOptions.OUTPUT_PATH);
 			
-			String output = sysConfig.getTwutilsPath().concat(outputDir[0]);
-			
-			runner.searchTweetsFromStream(output, keywords);
-		}
-			 
-		if (cmdLine.hasOption(TwutilsOptions.HELP)) {
-			 help();
-		} else {
-			logger.info("The entered option does not exists. ");
-			help();
-			return -1;
-		}
+			if (keywords.length == 0) {
+				
+			}
 
+			outputDefault = sysConfig.getTwutilsPath()
+					.concat(outputDir[0]);
+
+			this.runner.searchTweetsFromStream(keywords, outputDefault);
+		} else if (cmdLine.hasOption(TwutilsOptions.TWEETS_BY_LOCATION)) {
+			String[] keywords = cmdLine.getOptionValues(TwutilsOptions.TWEETS_FROM_STREAM);
+			String[] coordinates = cmdLine.getOptionValues(TwutilsOptions.TWEETS_BY_LOCATION);
+			String[] unit = cmdLine.getOptionValues(TwutilsOptions.UNIT);
+			String[] outputDir = cmdLine.getOptionValues(TwutilsOptions.OUTPUT_PATH);
+			
+			if (coordinates.length == 0 || keywords.length == 0) {
+				LOGGER.warn("Search by geolocation was selected but no coordinates were given. ");
+				LOGGER.warn("Check out the correct usage. ");
+				cmdLine.help();
+				return -1;
+			}
+			
+			outputDefault = sysConfig.getTwutilsPath()
+					.concat(outputDir[0]);
+			
+			this.runner.searchGeoTweetsFromStream(keywords, coordinates, unit, outputDefault);
+		} else if (cmdLine.hasOption(TwutilsOptions.HELP)) {
+				 cmdLine.help();
+		} else {
+			LOGGER.info("The entered option does not exists. ");
+			cmdLine.help();
+			return -1;
+		}	
+		
 		return 0;
 	}
 	
 	public static void main(String[] args) throws TwitterException {
-		int execStat = new Twutils(args)
-				.run();
+		int execStat = new Twutils()
+				.run(args);
 		System.exit(execStat);
 	}
 }

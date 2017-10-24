@@ -40,7 +40,7 @@
 	</build>
   	
   	<properties>
-	<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
 		<!-- APIs -->
 		<twitter4j-core.version>4.0.4</twitter4j-core.version>
@@ -99,9 +99,7 @@
 			<type>jar</type>
 		</dependency>
 
-  		<!-- https://mvnrepository.com/artifact/org.apache.commons/commons-io -->
-		<!-- https://mvnrepository.com/artifact/commons-io/commons-io -->
-		<dependency>
+  		<dependency>
     		<groupId>commons-io</groupId>
     		<artifactId>commons-io</artifactId>
     		<version>${commons.io.version}</version>
@@ -111,8 +109,6 @@
     		<groupId>org.apache.commons</groupId>
     		<artifactId>commons-lang3</artifactId>
     		<version>${commons-lang3.version}</version>
-		</dependency>
-			
-		
+		</dependency>	
   </dependencies>
 </project>
