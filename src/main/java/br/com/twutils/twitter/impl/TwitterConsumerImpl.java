@@ -5,12 +5,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 
 import com.univocity.parsers.csv.CsvWriter;
 
 import br.com.twutils.csv.CsvManager;
 import br.com.twutils.csv.impl.CsvManagerImpl;
+import br.com.twutils.exception.TwutilsException;
 import br.com.twutils.twitter.TwitterConsumer;
 import br.com.twutils.utils.DefaultValues;
 import br.com.twutils.utils.PropertiesHandler;
@@ -81,9 +83,18 @@ public class TwitterConsumerImpl implements TwitterConsumer {
 			twitter = TwitterFactory.getSingleton();
 			accessTk = new AccessToken(accessToken, accessSecret);
 			twitter.setOAuthConsumer(consumerKey, consumerSecret);
-			twitter.setOAuthAccessToken(accessTk);			
+			twitter.setOAuthAccessToken(accessTk);
+			
+			if (twitter.getId() > 0) {
+				LOGGER.info("Authorized.");
+				LOGGER.info("Credentials owner : ");
+				LOGGER.info("User Id: " + twitter.getId());
+				LOGGER.info("User name: " + twitter.getScreenName());
+			} else {
+				throw new TwitterException("Unable to authenticate application. ");
+			}
 		} catch (Exception e1) {
-			LOGGER.error("Unable to authenticate application. ");
+			LOGGER.error("Problem during auth. Please verify the credentials were correctly provided. ");
 			throw new RuntimeException(e1.getMessage());
 		}
 		
@@ -98,11 +109,13 @@ public class TwitterConsumerImpl implements TwitterConsumer {
 		this.consumerSecret = twitterProperties.get("consumerSecret");
 	}
 	
-	public List<TweetVO> searchGeoTweetsFromStream(double latitude, double longitude, double radius,
-			String unit, String... keywords) throws TwitterException {
+	public List<TweetVO> searchGeoTweetsFromStream(String outputFilePath, double latitude, double longitude, double radius,
+			String unit, String... keywords) throws TwutilsException {
 		StringBuilder rawQuery = new StringBuilder();
 		List<TweetVO> tweetsListVO = new ArrayList<TweetVO>();
-
+		
+		this.setOutputFilePath(outputFilePath);
+		
 		for (int i = 0; i < keywords.length; i++) {
 			rawQuery.append("(" + keywords[i] + ")");
 			if (i < keywords.length - 1) {
@@ -119,11 +132,12 @@ public class TwitterConsumerImpl implements TwitterConsumer {
 		} else {
 			query.setGeoCode(location, radius, Unit.mi);
 		}
-
+		
+		this.setKeywords(rawQuery.toString());
 		return searchTweetsFromStream(query, 1L, tweetsListVO);
 	}
 	
-	public List<TweetVO> searchTweetsFromStream(Query query, Long sinceId, List<TweetVO> tweetsListVO) throws TwitterException {
+	public List<TweetVO> searchTweetsFromStream(Query query, Long sinceId, List<TweetVO> tweetsListVO) throws TwutilsException {
 		QueryResult result;
 		List<TweetVO> listWithTweets = tweetsListVO;
 		
@@ -211,7 +225,7 @@ public class TwitterConsumerImpl implements TwitterConsumer {
 		return listWithTweets;
 	}
 	
-	public List<TweetVO> searchTweetsFromStream(String outputFilePath, String... keywords) throws TwitterException {
+	public List<TweetVO> searchTweetsFromStream(String outputFilePath, String... keywords) throws TwutilsException {
 		StringBuilder rawQuery = new StringBuilder();
 		List<TweetVO> tweetsListVO = new ArrayList<TweetVO>();
 		
@@ -228,7 +242,7 @@ public class TwitterConsumerImpl implements TwitterConsumer {
 		this.setKeywords(rawQuery.toString());
 		
 		LOGGER.info("Retrieve tweets contaiting the following words: " + rawQuery.toString());
-		return searchTweetsFromStream(query, getLastSinceId(), tweetsListVO);
+		return searchTweetsFromStream(query, 1L, tweetsListVO);
 	}
 	
 	/*
@@ -243,7 +257,12 @@ public class TwitterConsumerImpl implements TwitterConsumer {
 	}
 	
 	public Long getLastSinceId() {
-		String strLastSinceId = properties.getTwitterProperties().get("sinceIdFromLastExec");
+		String strLastSinceId = properties.getProperty("twutils.search.last.sinceid");
+		if (!StringUtils.isNotBlank(strLastSinceId)) {
+			properties.setProperty("twutils.search.last.sinceid", "1L");
+			strLastSinceId = "1L";
+		}
+		
 		this.lastExecutionSinceId = Long.valueOf(strLastSinceId);
 		return this.lastExecutionSinceId;
 	} 

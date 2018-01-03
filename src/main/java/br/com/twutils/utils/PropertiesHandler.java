@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
+import org.apache.log4j.Logger;
+
 /**
  * 
  * @author Adail Carvalho
@@ -14,6 +16,8 @@ import java.util.Properties;
  * @since 27-08-2016
  */
 public class PropertiesHandler {
+	
+	private static final Logger LOGGER = Logger.getLogger(PropertiesHandler.class); 
 	
 	Properties properties;
 	
@@ -54,10 +58,30 @@ public class PropertiesHandler {
 				twitterProperties.put("sinceIdFromLastExec", sinceIdFromLastExec);
 
 			} catch (IOException e) {
+				LOGGER.error("Problem during reading properties file. ");
 				throw new RuntimeException(e);
 			}
 		}
 		
 		return twitterProperties;
+	}
+	
+	public String getProperty(String key) {
+		String value = "";
+		try {
+			properties.load(this.getClass().getResourceAsStream(
+					"/social_networking.properties"));
+			value = properties.getProperty(key);
+		} catch (IOException e1) {
+			LOGGER.warn("Problem during reading properties file. ");
+		}
+		
+		return value;
+	}
+	
+	public void setProperty(String key, String value) {
+		LOGGER.info("Setting to properties key={" + key + "}, value={" + value + "}");
+		
+		properties.setProperty(key, value);
 	}
 }
