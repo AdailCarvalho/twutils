@@ -39,7 +39,7 @@ Options available:
 
 Pass any number of keywords the tweets you want to search must contain, `separated by comma`: 
 
-	java -jar twutils-1.0.0-jar-with-dependencies.jar --streamTT "#Xfactor;#BakeOffBrazil;Estado Islâmico" --output dados_tv.csv
+	java -jar twutils-1.0.0-jar-with-dependencies.jar --streamTT "#Xfactor, #BakeOffBrazil, Estado Islâmico" --output dados_tv.csv
 	
 If you want to retrive tweets from a specific region, provide the coordinates and radius you want 
 the search mechanism to filter through the geoTT option, `delimited by comma`, in the folowing order:
