@@ -58,6 +58,10 @@ public class SysConfig {
 		LOG.info("Application main directory: " + this.twutilsPath);
 	}
 	
+	public String getSoSlash() {
+		return SO_SLASH;
+	}
+
 	public String getTwutilsPath() {
 		return this.twutilsPath;
 	}

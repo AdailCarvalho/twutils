@@ -4,8 +4,9 @@ import org.apache.log4j.Logger;
 
 import br.com.twutils.cli.Cli;
 import br.com.twutils.config.SysConfig;
+import br.com.twutils.exception.TwutilsException;
 import br.com.twutils.runner.TwutilsRunner;
-import twitter4j.TwitterException;
+import twitter4j.Query.Unit;
 
 /**
  * 
@@ -25,59 +26,80 @@ public class Twutils {
 	
 	TwutilsRunner runner;
 	
-	public Twutils() throws TwitterException {
+	public Twutils() {
 		sysConfig = new SysConfig();
 		runner = new TwutilsRunner();
 		cmdLine = new Cli();
 	}
 	
-	public int run(String[] cmdArgs) throws TwitterException {
-		cmdLine.buildOptions(cmdArgs);
-		String outputDefault = "";
+	public int validateAndrun(String[] cmdArgs) throws TwutilsException {
+		boolean isGeolocated = false;
 		
-		if (cmdLine.hasOption(TwutilsOptions.TWEETS_FROM_STREAM)) {
-			String[] keywords = cmdLine.getOptionValues(TwutilsOptions.TWEETS_FROM_STREAM);
-			String[] outputDir = cmdLine.getOptionValues(TwutilsOptions.OUTPUT_PATH);
-			
-			if (keywords.length == 0) {
+		this.cmdLine.buildOptions(cmdArgs);
+		
+		String outputDefault = sysConfig.getTwutilsPath();
+		String[] keywords = new String[3];
+		String[] coordinates = new String[1];
+		String[] coordinatesDel = new String[3];
+		String[] unit = new String[1];
+		String[] outputDir = new String[1];
+		String distUnit = Unit.km.name();
+		
+		try {
+			if (cmdLine.hasOption(TwutilsOptions.TWEETS_FROM_STREAM)) {
+				keywords = cmdLine.getOptionValues(TwutilsOptions.TWEETS_FROM_STREAM);
 				
-			}
-
-			outputDefault = sysConfig.getTwutilsPath()
-					.concat(outputDir[0]);
-
-			this.runner.searchTweetsFromStream(keywords, outputDefault);
-		} else if (cmdLine.hasOption(TwutilsOptions.TWEETS_BY_LOCATION)) {
-			String[] keywords = cmdLine.getOptionValues(TwutilsOptions.TWEETS_FROM_STREAM);
-			String[] coordinates = cmdLine.getOptionValues(TwutilsOptions.TWEETS_BY_LOCATION);
-			String[] unit = cmdLine.getOptionValues(TwutilsOptions.UNIT);
-			String[] outputDir = cmdLine.getOptionValues(TwutilsOptions.OUTPUT_PATH);
-			
-			if (coordinates.length == 0 || keywords.length == 0) {
-				LOGGER.warn("Search by geolocation was selected but no coordinates were given. ");
-				LOGGER.warn("Check out the correct usage. ");
+				if (cmdLine.hasOption(TwutilsOptions.OUTPUT_PATH)) {
+					outputDir = cmdLine.getOptionValues(TwutilsOptions.OUTPUT_PATH);
+					outputDefault = outputDefault
+							.concat(outputDir[0] + sysConfig.getSoSlash());
+				}
+				
+				if (cmdLine.hasOption(TwutilsOptions.TWEETS_BY_LOCATION)) {
+					coordinates = cmdLine.getOptionValues(TwutilsOptions.TWEETS_BY_LOCATION);
+					coordinatesDel = coordinates[0].split(",");
+					outputDir = cmdLine.getOptionValues(TwutilsOptions.OUTPUT_PATH);
+					unit = cmdLine.getOptionValues(TwutilsOptions.UNIT);
+					
+					if (unit.length != 0) {
+						distUnit = unit[0];
+					} else {
+						LOGGER.warn("No distance unit was informed. Using default measure - KM");
+					}
+					
+					isGeolocated = true;
+				}			
+				
+				if (keywords.length == 0) {
+					LOGGER.warn("At least one keyword must be informed. ");
+					cmdLine.help();
+					return -1;
+				}
+				
+				if (isGeolocated) {
+					this.runner.searchGeoTweetsFromStream(keywords, coordinatesDel, distUnit, outputDefault);
+	
+				} else {
+					this.runner.searchTweetsFromStream(keywords, outputDefault);
+				}
+				
+			} else if (cmdLine.hasOption(TwutilsOptions.HELP)) {
+					 cmdLine.help();
+			} else {
+				LOGGER.info("The entered option does not exists. ");
 				cmdLine.help();
 				return -1;
 			}
+		} catch (TwutilsException e1) {
 			
-			outputDefault = sysConfig.getTwutilsPath()
-					.concat(outputDir[0]);
-			
-			this.runner.searchGeoTweetsFromStream(keywords, coordinates, unit, outputDefault);
-		} else if (cmdLine.hasOption(TwutilsOptions.HELP)) {
-				 cmdLine.help();
-		} else {
-			LOGGER.info("The entered option does not exists. ");
-			cmdLine.help();
-			return -1;
-		}	
+		}
 		
 		return 0;
 	}
 	
-	public static void main(String[] args) throws TwitterException {
+	public static void main(String[] args) throws TwutilsException {
 		int execStat = new Twutils()
-				.run(args);
+				.validateAndrun(args);
 		System.exit(execStat);
 	}
 }

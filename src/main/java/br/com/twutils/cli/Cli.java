@@ -6,12 +6,13 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
+import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.log4j.Logger;
 
 import br.com.twutils.TwutilsOptions;
-import twitter4j.TwitterException;
+import br.com.twutils.exception.TwutilsException;
 
 public class Cli {
 	
@@ -23,13 +24,15 @@ public class Cli {
 	
 	private Options options;
 		
-	public Cli() throws TwitterException {
+	public Cli() {
 		cmdParser = new BasicParser();
 		options = new Options();
 	}
 	
 	@SuppressWarnings("static-access")
-	public void buildOptions(String[] cmdArgs) throws TwitterException {
+	public void buildOptions(String[] cmdArgs) throws TwutilsException {
+		OptionGroup searchTweetsOptGrp = new OptionGroup();
+		
 		Option strTweetsOpt = OptionBuilder.withArgName("tt")
 				.withLongOpt(TwutilsOptions.TWEETS_FROM_STREAM)
 				.withDescription("Collect tweets that contains the given keywords. ")
@@ -37,7 +40,7 @@ public class Cli {
 				.isRequired(true)
 				.create();
 		
-		Option geoTweetsOpt = OptionBuilder.withArgName("tt")
+		Option geoTweetsOpt = OptionBuilder.withArgName("geo")
 				.withLongOpt(TwutilsOptions.TWEETS_BY_LOCATION)
 				.withDescription("Collect tweets that contains the given keywords, around a specific geolocation.")
 				.hasArg(true)
@@ -50,6 +53,10 @@ public class Cli {
 				.hasArg(true)
 				.isRequired(false)
 				.create();
+		
+		searchTweetsOptGrp.addOption(strTweetsOpt)
+						  .addOption(geoTweetsOpt)
+						  .addOption(unitOpt);
 		
 		Option outputOpt = OptionBuilder.withArgName("out")
 				.withLongOpt(TwutilsOptions.OUTPUT_PATH)
@@ -64,9 +71,7 @@ public class Cli {
 				.hasArg(false)
 				.create();
 		
-		options.addOption(strTweetsOpt);
-		options.addOption(geoTweetsOpt);
-		options.addOption(unitOpt);
+		options.addOptionGroup(searchTweetsOptGrp);
 		options.addOption(outputOpt);
 		options.addOption(helpOpt);
 
@@ -74,12 +79,18 @@ public class Cli {
 			if (cmdArgs.length == 0) {
 				logger.warn("Missing required args: ");
 				help();
+				throw new TwutilsException("Missing required args. ");
 			} else {
 				cmdLine = cmdParser.parse(options, cmdArgs);
 			}
-		} catch (ParseException e1) {
-			throw new RuntimeException(e1);
-		}		
+		} catch (ParseException pe) {
+			logger.error("Problem during options parsing.");
+			help();
+			throw new RuntimeException(pe);
+		} catch (TwutilsException t1) {
+			logger.error("Problem during options parsing.");
+			throw new RuntimeException(t1);
+		}
 	}
 	
 	public boolean hasOption(String option) {

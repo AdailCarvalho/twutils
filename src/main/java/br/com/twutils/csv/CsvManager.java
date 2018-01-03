@@ -2,7 +2,7 @@ package br.com.twutils.csv;
 
 import com.univocity.parsers.csv.CsvWriter;
 
-import twitter4j.TwitterException;
+import br.com.twutils.exception.TwutilsException;
 
 /**
  * 
@@ -19,6 +19,6 @@ public interface CsvManager {
 	 * @param outputPath The path were the file will be outputed.
 	 * @return Configured CsvWriter instance,
 	 */
-	public CsvWriter getCsvWriter(String outputPath) throws TwitterException;
+	public CsvWriter getCsvWriter(String outputPath) throws TwutilsException;
 
 }
